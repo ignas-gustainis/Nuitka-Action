@@ -67,6 +67,8 @@ inputs:
     description: "Include into files matching the PATTERN. Overrides all other follow options. Can be given multiple times. Default empty."
   prefer-source-code:
     description: "For already compiled extension modules, where there is both a source file and an extension module, normally the extension module is used, but it should be better to compile the module from available source code for best performance. If not desired, there is --no- prefer-source-code to disable warnings about it. Default off."
+  follow-import-to:
+    description: "Follow to that module if used, or if a package, to the whole package. Can be given multiple times. Default empty."
   nofollow-import-to:
     description: "Do not follow to that module name even if used, or if a package name, to the whole package in any case, overrides all other options. Can be given multiple times. Default empty."
   user-package-configuration-file:
@@ -247,6 +249,12 @@ runs:
             $args += @("--include-package-data=$datum");
           }
         }
+        if ("${{ inputs.follow-import-to }}" -ne ''){
+          $data = ("${{ inputs.follow-import-to }}" -split '\s*,\s*')
+          foreach ($datum in $data) {
+            $args += @("--follow-import-to=$datum");
+          }
+        }
         if ("${{ inputs.nofollow-import-to }}" -ne ''){
           $data = ("${{ inputs.nofollow-import-to }}" -split '\s*,\s*')
           foreach ($datum in $data) {
@@ -283,7 +291,6 @@ runs:
           python -m nuitka $args "${{ inputs.script-name }}"
         }
       working-directory: ${{ inputs.working-directory }}
-
 
     - name: Build Executable (macOS and Linux)
       if: ${{ runner.os == 'macOS' || runner.os == 'Linux' }}
@@ -355,6 +362,12 @@ runs:
           for datum in $(echo ${{ inputs.include-package-data }} | sed "s/,/ /g")
           do
             ARGS+=" --include-package-data=$datum"
+          done
+        fi
+        if [ "${{ inputs.follow-import-to }}" != "" ]; then
+          for datum in $(echo ${{ inputs.follow-import-to }} | sed "s/,/ /g")
+          do
+            ARGS+=" --follow-import-to=$datum"
           done
         fi
         if [ "${{ inputs.nofollow-import-to }}" != "" ]; then
